@@ -1,0 +1,34 @@
+# Docker database volumes (never commit live DB data)
+db/
+immich-db/
+
+# Immich ML models (downloaded automatically on first run)
+immich-model-cache/
+
+# Python virtual environments
+.venv/
+photo-agent/.venv/
+__pycache__/
+*.py[cod]
+
+# Secrets and machine-local config
+.env
+immich.env
+CREDENTIALS.txt
+nextcloud-config/config.php
+
+# SSL certificates (regenerate per host with scripts/regenerate-ssl.sh)
+nginx/ssl/*.pem
+nginx/ssl/*.key
+nginx/ssl/*.crt
+
+# Logs and runtime state
+*.log
+.caffeinate.pid
+
+# macOS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/

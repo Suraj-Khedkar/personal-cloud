@@ -40,14 +40,83 @@ services:
     ports:
       - "${HTTP_PORT}:80"
       - "${HTTPS_PORT}:443"
+      - "${IMMICH_HTTPS_PORT:-8443}:8443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - nextcloud
+      - immich-server
     networks:
       - cloud-net
+
+  immich-redis:
+    image: valkey/valkey:9
+    restart: unless-stopped
+    healthcheck:
+      test: valkey-cli ping || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cloud-net
+
+  immich-db:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
+    restart: unless-stopped
+    env_file:
+      - immich.env
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ImmichDbK31P0wulZfI9}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_DB: ${DB_DATABASE_NAME:-immich}
+      POSTGRES_INITDB_ARGS: --data-checksums
+    volumes:
+      - ./immich-db:/var/lib/postgresql/data
+    shm_size: 128mb
+    networks:
+      - cloud-net
+    healthcheck:
+      test: pg_isready -U postgres -d immich
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    restart: unless-stopped
+    env_file:
+      - immich.env
+    ports:
+      - "2283:2283"
+    volumes:
+      - ${IMMICH_UPLOAD_PATH:-/Volumes/Cloud/immich/upload}:/data
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      immich-db:
+        condition: service_healthy
+      immich-redis:
+        condition: service_healthy
+    networks:
+      - cloud-net
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    restart: unless-stopped
+    env_file:
+      - immich.env
+    volumes:
+      - ./immich-model-cache:/cache
+    networks:
+      - cloud-net
+
+  photo-agent:
+    build: ./photo-agent
+    profiles: ["agent"]
+    volumes:
+      - /Volumes/Cloud:/data/cloud
+    command: ["python", "agent.py", "--config", "/app/config.yaml"]
 
 networks:
   cloud-net:

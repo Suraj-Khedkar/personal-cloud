@@ -1,0 +1,77 @@
+# Photo cleanup agent — conservative mode: quarantine ONLY when certain.
+
+scan_paths:
+  - /data/cloud/nextcloud
+  - /data/cloud/immich/upload
+
+exclude_dirs:
+  - _review
+  - .Spotlight-V100
+  - .fseventsd
+  - appdata_
+  - files_versions
+  - cache
+
+quarantine_root: /data/cloud/_review/quarantine
+log_dir: /data/cloud/_review/logs
+
+# Auto-delete quarantine folders older than this many days
+quarantine_retention_days: 30
+
+image_extensions:
+  - .jpg
+  - .jpeg
+  - .png
+  - .heic
+  - .webp
+  - .gif
+
+# Minimum confidence (0.0–1.0) required to quarantine. 1.0 = only 100% certain matches.
+min_quarantine_confidence: 1.0
+
+# --- What to check (disable uncertain detectors) ---
+
+enable_exact_duplicates: true      # byte-identical files — 100% certain
+enable_similar_duplicates: false   # too many false positives on burst shots
+enable_blur: false                 # portraits with bokeh get misclassified
+enable_screenshots: true           # filename must explicitly say "screenshot"
+enable_greetings: true             # filename or OCR must explicitly match wish phrases
+enable_clip: false                 # AI is never 100% — off by default
+
+# --- Thresholds (only used when detector is enabled) ---
+
+blur_threshold: 15                 # only if enable_blur: true — extremely blurry only
+similar_hash_threshold: 0          # only identical perceptual hash (if enabled)
+
+screenshot_patterns:
+  - screenshot
+  - screen shot
+  - screencapture
+
+# Removed aspect-ratio PNG guessing — caused false positives
+
+greeting_filename_phrases:
+  - happy birthday
+  - good morning
+  - good night
+  - good evening
+  - merry christmas
+  - happy new year
+  - happy diwali
+  - happy holi
+  - wish you
+  - many happy returns
+
+greeting_ocr_keywords:
+  - happy birthday
+  - good morning
+  - good night
+  - merry christmas
+  - happy new year
+  - wish you a happy
+  - many happy returns
+
+clip_confidence_threshold: 0.55
+clip_margin_threshold: 0.25
+
+min_file_bytes: 20480
